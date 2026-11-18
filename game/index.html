@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUMEN BAY — Neon Heat</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a24'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%23ff2ea6'%3EL%3C/text%3E%3C/svg%3E">
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0a24; height: 100%; overflow: hidden; font-family: sans-serif; }
+  #game { display: block; width: 100vw; height: 100vh; }
+  #hud { position: fixed; top: 0; left: 0; right: 0; pointer-events: none; color: #fff; text-shadow: 0 1px 3px #000; z-index: 5; }
+  #hud-top-left { position: absolute; top: 12px; left: 14px; }
+  #hud-stars { font-size: 26px; color: #ffdd33; letter-spacing: 2px; }
+  #hud-wanted-label { font-size: 11px; letter-spacing: 3px; color: #ff8888; margin-top: 2px; }
+  #hud-cash { font-size: 22px; font-weight: bold; color: #7CFF00; margin-top: 6px; }
+  #hud-healthbar-wrap { width: 180px; height: 10px; background: rgba(0,0,0,0.6); border: 1px solid #888; margin-top: 6px; }
+  #hud-healthbar { height: 100%; width: 100%; background: #7CFF00; }
+  #hud-health, #hud-ammo, #hud-speed, #hud-clock, #hud-rank, #hud-radio, #hud-weapons { font-size: 14px; margin-top: 4px; }
+  #hud-objective { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); border: 1px solid #00f0ff; padding: 8px 16px; font-size: 15px; max-width: 520px; text-align: center; }
+  #hud-compass { margin-top: 4px; color: #00f0ff; font-size: 13px; text-align: center; }
+  .screen { display: none; position: fixed; inset: 0; z-index: 10; background: rgba(5,5,20,0.82); color: #fff; text-align: center; padding-top: 8vh; overflow-y: auto; }
+  .screen h1 { font-size: 54px; margin: 0; color: #ff2ea6; text-shadow: 0 0 24px #ff2ea6, 0 0 60px #00f0ff; letter-spacing: 4px; }
+  .screen h2 { font-size: 20px; color: #00f0ff; letter-spacing: 6px; margin: 8px 0 20px; }
+  .screen ul { list-style: none; padding: 0; font-size: 16px; line-height: 1.9; }
+  .screen p { font-size: 15px; line-height: 1.7; max-width: 640px; margin: 10px auto; color: #ddd; }
+  .screen button { pointer-events: auto; font-size: 18px; padding: 12px 28px; margin: 8px; background: #ff2ea6; color: #fff; border: none; cursor: pointer; }
+  .screen button:hover { background: #00f0ff; color: #000; }
+  #test-results { display: none; position: fixed; left: 10px; bottom: 10px; z-index: 20; background: rgba(0,0,0,0.85); color: #7CFF00; font: 12px monospace; padding: 8px; white-space: pre; max-height: 40vh; overflow: auto; }
+</style>
+</head>
+<body>
+<canvas id="game" width="1280" height="720"></canvas>
+<div id="hud">
+  <div id="hud-top-left">
+    <div id="hud-stars">☆☆☆☆☆</div>
+    <div id="hud-wanted-label">WANTED</div>
+    <div id="hud-cash">$250</div>
+    <div id="hud-healthbar-wrap"><div id="hud-healthbar"></div></div>
+    <div id="hud-health">HP 100</div>
+    <div id="hud-ammo">Pistol 48 / ∞</div>
+    <div id="hud-speed">—</div>
+    <div id="hud-clock">18:40</div>
+    <div id="hud-rank">Street Punk · 0 pts</div>
+    <div id="hud-radio">Radio off — press R in a car</div>
+    <div id="hud-weapons"></div>
+  </div>
+  <div id="hud-objective">Steal a car (press E near one).</div>
+  <div id="hud-compass"></div>
+</div>
+
+<div class="screen" id="screen-title">
+  <h1>LUMEN BAY</h1>
+  <h2>NEON HEAT — AN OPEN-WORLD CRIME GAME</h2>
+  <p>Golden dusk falls over the neon coast. Steal cars, outrun the law, and take the crown of the Bay. An original city, story and cast — no borrowed names, no borrowed maps.</p>
+  <ul id="title-features"></ul>
+  <p>WASD / arrows — move &amp; drive &nbsp;·&nbsp; Mouse — aim, click — shoot &nbsp;·&nbsp; E — steal / exit car / use shops &nbsp;·&nbsp; Shift — run / NOS &nbsp;·&nbsp; R — radio, 1–4 — weapons &nbsp;·&nbsp; P — pause</p>
+  <button id="btn-start">START ENGINE</button>
+  <button id="btn-load">CONTINUE (LOAD SAVE)</button>
+</div>
+
+<div class="screen" id="screen-pause">
+  <h1>PAUSED</h1>
+  <p>The Bay waits for no one. Press P or Resume to keep driving.</p>
+  <button id="btn-resume">RESUME</button>
+</div>
+
+<div class="screen" id="screen-busted">
+  <h1>BUSTED</h1>
+  <p>The Lumen Bay PD caught you. Half your cash is gone — the fine, they call it.</p>
+  <button id="btn-respawn">WALK FREE</button>
+</div>
+
+<div class="screen" id="screen-wasted">
+  <h1>WASTED</h1>
+  <p>You flatlined on the neon asphalt. The Harbor Loft patched you up — for a price.</p>
+  <button id="btn-respawn">BACK ON THE STREETS</button>
+</div>
+
+<div id="test-results"></div>
+
+<script src="src/config.js"></script>
+<script src="src/city.js"></script>
+<script src="src/vehicles.js"></script>
+<script src="src/people.js"></script>
+<script src="src/player.js"></script>
+<script src="src/missions.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/render.js"></script>
+<script src="src/hud.js"></script>
+<script src="src/save.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
